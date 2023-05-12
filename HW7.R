@@ -114,5 +114,26 @@ boxplot(coeff_BT_emp[, 1], coeff_BT_res[, 1], coeff_BT_wild[, 1],
 # -----------------------------------------------------------------------------------------
 
 # 2
+# Logistic regression of response variable admission based on covariates gre and gpa
 
+setwd("/Users/nicolesmith/Desktop/School/stat-403-projects")
+admissions = read.csv("binary.csv") 
+B = 10000
+n = nrow(admissions)
+
+# a Parametric bootstrap for 90% CI for slope of GPA
+# get estimated model parameter from linear fit
+# 1 means admit, 0 means reject (binomial)
+lm_GPA = glm(admit ~ gpa, admissions, family="binomial")
+slope_sample = lm_GPA$coefficients[2]
+p0 = predict(lm_GPA, type = 'response')
+slope_GPA = rep(NA, B)
+for (i in 1:B){
+  # bootstrap sample for admit or not
+  Y_BT = rbinom(n, 1, p0)
+  # model from bootstrap sample, obtain slope
+  lm_BT = glm(Y_BT ~ admissions$gpa, family='binomial')
+  slope_GPA[i] = lm_BT$coefficients[2]
+}
+hist(slope_GPA)
 
