@@ -121,6 +121,7 @@ admissions = read.csv("binary.csv")
 B = 10000
 n = nrow(admissions)
 
+
 # a Parametric bootstrap for 90% CI for slope of GPA
 # get estimated model parameter from linear fit
 # 1 means admit, 0 means reject (binomial)
@@ -139,4 +140,53 @@ for (i in 1:B){
 hist(slope_GPA)
 # construct 90% CI
 quantile(slope_GPA_BT, c(0.05, 0.95))
+
+
+# b Use both param. and empirical BT to estimate SE of the intercept, slope of admit~GRE, 
+# and slope of admit~GPA
+# empirical bootstrap
+coeff_emp_BT = matrix(NA, B, 3)
+for (i in 1:B){
+  # get BT samples
+  BT_i = sample(n, n, replace = T)
+  admit_BT = admissions$admit[BT_i]
+  gre_BT = admissions$gre[BT_i]
+  gpa_BT = admissions$gpa[BT_i]
+  # fit models from BT samples, obtain intecept, slope of GRE model, slope of GPA model
+  lm_GRE_BT = lm(admit_BT ~ gre_BT)
+  lm_GPA_BT = lm(admit_BT ~ gpa_BT)
+  coeff_emp_BT[i, 1] = lm_GRE_BT$coefficients[1]
+  coeff_emp_BT[i, 2] = lm_GRE_BT$coefficients[2]
+  coeff_emp_BT[i, 3] = lm_GPA_BT$coefficients[2]
+}
+
+
+# parametric bootstrap
+# fit linear models from data
+lm_GRE = glm(admit ~ gre, admissions, family="binomial")
+lm_GPA = glm(admit ~ gpa, admissions, family="binomial")
+coeff_param_BT = matrix(NA, B, 3)
+# estimate model params
+p0_GRE = predict(lm_GRE, type = 'response')
+p0_GPA = predict(lm_GPA, type = 'response')
+for (i in 1:B){
+  # bootstrap sample for admit or not
+  Y_BT = rbinom(n, 1, p0)
+  # Fit model from BT samples, get coefficients
+  lm_GRE_BT = glm(Y_BT ~ admissions$gre, family='binomial')
+  lm_GPA_BT = glm(Y_BT ~ admissions$gpa, family='binomial')
+  coeff_param_BT[i, 1] = lm_GRE_BT$coefficients[1]
+  coeff_param_BT[i, 2] = lm_GRE_BT$coefficients[2]
+  coeff_param_BT[i, 3] = lm_GPA_BT$coefficients[2]
+}
+
+# compare the standard error of the two BT methods for each coefficient estimate
+se_emp = c(sd(coeff_emp_BT[,1]), sd(coeff_emp_BT[,2]), sd(coeff_emp_BT[,3]))
+se_param = c(sd(coeff_param_BT[,1]), sd(coeff_param_BT[,2]), sd(coeff_param_BT[,3]))
+compare_se = matrix(data= c(se_emp, se_param), byrow = T, nrow = 2, ncol = 3)
+colnames(compare_se) = c("SE(Intercept)", "SE(GRE Slope)", "SE(GPA Slope)")
+rownames(compare_se) = c("Empirical", "Parametric")
+
+
+
 
