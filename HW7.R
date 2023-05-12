@@ -127,13 +127,16 @@ n = nrow(admissions)
 lm_GPA = glm(admit ~ gpa, admissions, family="binomial")
 slope_sample = lm_GPA$coefficients[2]
 p0 = predict(lm_GPA, type = 'response')
-slope_GPA = rep(NA, B)
+slope_GPA_BT = rep(NA, B)
 for (i in 1:B){
   # bootstrap sample for admit or not
   Y_BT = rbinom(n, 1, p0)
   # model from bootstrap sample, obtain slope
   lm_BT = glm(Y_BT ~ admissions$gpa, family='binomial')
-  slope_GPA[i] = lm_BT$coefficients[2]
+  slope_GPA_BT[i] = lm_BT$coefficients[2]
 }
+# histogram of BT sample of model slope
 hist(slope_GPA)
+# construct 90% CI
+quantile(slope_GPA_BT, c(0.05, 0.95))
 
