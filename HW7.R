@@ -1,7 +1,9 @@
 # 1
+# Goal: Analyze variance of bootstrap methods (empirical, residual, and wild) for finding 
+# the slope of the linear model of response variable Petal.Width and various covariates
+# (Sepal.Length, Sepal.Width, Petal.Length). Using R's built in iris dataset.
 
-
-# a
+# a Linear fits from given data 
 fit_slen = lm(Petal.Width ~ Sepal.Length, iris)
 fit_swid = lm(Petal.Width ~ Sepal.Width, iris)
 fit_plen = lm(Petal.Width ~ Petal.Length, iris)
@@ -17,7 +19,7 @@ plot(iris$Petal.Length, iris$Petal.Width)
 lines(x, fit_plen$coefficients[1] + fit_plen$coefficients[2]*x, col="red")
 
 
-# b
+# b Bootstrapping linear fits
 B = 10000
 n = nrow(iris)
 
@@ -101,7 +103,7 @@ colnames(var_comp) = c("Sepal.Length Int.", "Sepal.Length Slope",
 rownames(var_comp) = c("Empirical", "Residual", "Wild")
 
 
-# c
+# c Comparison of variance of bootstrap methods
 # Boxplots to compare the intercept of Petal.Width ~ Sepal.Length variance across 3 BT methods
 boxplot(coeff_BT_emp[, 1], coeff_BT_res[, 1], coeff_BT_wild[, 1], 
         main = "Variance of LM Intercept Across 3 BT Models",
@@ -109,7 +111,8 @@ boxplot(coeff_BT_emp[, 1], coeff_BT_res[, 1], coeff_BT_wild[, 1],
         col = c("pink", "red", "orange"))
 
 
-
+# -----------------------------------------------------------------------------------------
 
 # 2
+
 
