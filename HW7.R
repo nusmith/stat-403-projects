@@ -121,32 +121,27 @@ for (i in 1:B){
   BT_i = sample(n, n, replace = T)
   sample_BT = admissions[BT_i,]
   # fit models from BT samples, obtain intecept, slope of GRE model, slope of GPA model
-  lm_GRE_BT = lm(admit ~ gre, sample_BT)
-  lm_GPA_BT = lm(admit ~ gpa, sample_BT)
-  coeff_emp_BT[i, 1] = lm_GRE_BT$coefficients[1]
-  coeff_emp_BT[i, 2] = lm_GRE_BT$coefficients[2]
-  coeff_emp_BT[i, 3] = lm_GPA_BT$coefficients[2]
+  lm_BT = lm(admit ~ gre + gpa, sample_BT)
+  coeff_emp_BT[i, 1] = lm_BT$coefficients[1]
+  coeff_emp_BT[i, 2] = lm_BT$coefficients[2]
+  coeff_emp_BT[i, 3] = lm_BT$coefficients[3]
 }
 
 
 # parametric bootstrap
 # fit linear models from data 
-lm_GRE = glm(admit ~ gre, admissions, family="binomial")
-lm_GPA = glm(admit ~ gpa, admissions, family="binomial")
+lm_admit = glm(admit ~ gre + gpa, admissions, family="binomial")
 coeff_param_BT = matrix(NA, B, 3)
 # estimate probability of admission based on GRE, GPA
-p0_GRE = predict(lm_GRE, type = 'response')
-p0_GPA = predict(lm_GPA, type = 'response')
+p0 = predict(lm_admit, type = 'response')
 for (i in 1:B){
   # bootstrap sample for admit or not
-  Y_BT_GRE = rbinom(n, 1, p0_GRE)
-  Y_BT_GPA = rbinom(n, 1, p0_GPA)
+  Y_BT = rbinom(n, 1, p0)
   # Fit model from BT samples, get coefficients
-  lm_GRE_BT = glm(Y_BT_GRE ~ admissions$gre, family="binomial")
-  lm_GPA_BT = glm(Y_BT_GPA ~ admissions$gpa, family="binomial")
-  coeff_param_BT[i, 1] = lm_GRE_BT$coefficients[1]
-  coeff_param_BT[i, 2] = lm_GRE_BT$coefficients[2]
-  coeff_param_BT[i, 3] = lm_GPA_BT$coefficients[2]
+  lm_admit_BT = glm(Y_BT ~ admissions$gre + admissions$gpa, family="binomial")
+  coeff_param_BT[i, 1] = lm_admit_BT$coefficients[1]
+  coeff_param_BT[i, 2] = lm_admit_BT$coefficients[2]
+  coeff_param_BT[i, 3] = lm_admit_BT$coefficients[3]
 }
 
 # compare the standard error of the two BT methods for each coefficient estimate
@@ -167,15 +162,36 @@ for (i in 1:B) {
   BT_i = sample(n, n, replace = T)  
   sample_BT = admissions[BT_i,]
   # fit models from BT samples 
-  lm_GRE_BT = lm(admit ~ gre, sample_BT)
-  lm_GPA_BT = lm(admit ~ gpa, sample_BT)
+  lm_admit_BT = lm(admit ~ gre + gpa, sample_BT)
   # predict probability of admission for GRE = 500, GPA = 3.7
-  p0_GRE = predict(lm_GRE_BT, newdata = 500, type = 'response')
-  p0_GPA = predict(lm_GPA_BT, newdata = 3.7, type = 'response')
-  
-  p_BT[i] = 0
+  p0 = predict(lm_admit_BT, newdata = data.frame("gre"= 500, "gpa" = 3.7), type = 'response')
+  p_BT[i] = p0
 }
 # Construct 90% CI using quantile method
 CI_lambda = quantile(p_BT, c(0.05, 0.95))
+
+
+# d Test null hypothesis H0 = John & Sam have same chance of admission
+# John: 700, 2.3; Sam: 670, 3.9
+# Test this by seeing if odds ratio = 1
+B = 100000
+n = nrow(admissions)
+OR_BT = rep(NA, B)
+for (i in 1:B){
+  BT_i = sample(n, n, replace = T)  
+  sample_BT = admissions[BT_i,]
+  # fit models from BT samples 
+  lm_admit_BT = lm(admit ~ gre + gpa, sample_BT)
+  # predict probability of admission for each candidate
+  p0_john = predict(lm_admit_BT, newdata = data.frame("gre"= 700, "gpa" = 2.3), type = "response")
+  p0_sam = predict(lm_admit_BT, newdata = data.frame("gre"= 670, "gpa" = 3.9), type = "response")
+  OR_BT[i] = p0_john / p0_sam
+}
+# t-test to get p-value
+# Testing if mean odds ratio is 1 (this would indicate that on average, sam and john 
+# have the same chance of admission)
+pval = t.test(OR_BT, mu = 1)$p.value
+# Using a significance level of 0.1
+reject_H0 = pval < 0.1
 
 
