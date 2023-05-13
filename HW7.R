@@ -133,11 +133,11 @@ for (i in 1:B){
   # bootstrap sample for admit or not
   Y_BT = rbinom(n, 1, p0)
   # model from bootstrap sample, obtain slope
-  lm_BT = glm(Y_BT ~ admissions$gpa, family='binomial')
+  lm_BT = glm(Y_BT ~ admissions$gpa, family="binomial")
   slope_GPA_BT[i] = lm_BT$coefficients[2]
 }
 # histogram of BT sample of model slope
-hist(slope_GPA)
+hist(slope_GPA_BT)
 # construct 90% CI
 quantile(slope_GPA_BT, c(0.05, 0.95))
 
@@ -149,12 +149,10 @@ coeff_emp_BT = matrix(NA, B, 3)
 for (i in 1:B){
   # get BT samples
   BT_i = sample(n, n, replace = T)
-  admit_BT = admissions$admit[BT_i]
-  gre_BT = admissions$gre[BT_i]
-  gpa_BT = admissions$gpa[BT_i]
+  sample_BT = admissions[BT_i,]
   # fit models from BT samples, obtain intecept, slope of GRE model, slope of GPA model
-  lm_GRE_BT = lm(admit_BT ~ gre_BT)
-  lm_GPA_BT = lm(admit_BT ~ gpa_BT)
+  lm_GRE_BT = lm(admit ~ gre, sample_BT)
+  lm_GPA_BT = lm(admit ~ gpa, sample_BT)
   coeff_emp_BT[i, 1] = lm_GRE_BT$coefficients[1]
   coeff_emp_BT[i, 2] = lm_GRE_BT$coefficients[2]
   coeff_emp_BT[i, 3] = lm_GPA_BT$coefficients[2]
@@ -162,19 +160,20 @@ for (i in 1:B){
 
 
 # parametric bootstrap
-# fit linear models from data
+# fit linear models from data 
 lm_GRE = glm(admit ~ gre, admissions, family="binomial")
 lm_GPA = glm(admit ~ gpa, admissions, family="binomial")
 coeff_param_BT = matrix(NA, B, 3)
-# estimate model params
+# estimate probability of admission based on GRE, GPA
 p0_GRE = predict(lm_GRE, type = 'response')
 p0_GPA = predict(lm_GPA, type = 'response')
 for (i in 1:B){
   # bootstrap sample for admit or not
-  Y_BT = rbinom(n, 1, p0)
+  Y_BT_GRE = rbinom(n, 1, p0_GRE)
+  Y_BT_GPA = rbinom(n, 1, p0_GPA)
   # Fit model from BT samples, get coefficients
-  lm_GRE_BT = glm(Y_BT ~ admissions$gre, family='binomial')
-  lm_GPA_BT = glm(Y_BT ~ admissions$gpa, family='binomial')
+  lm_GRE_BT = glm(Y_BT_GRE ~ admissions$gre, family="binomial")
+  lm_GPA_BT = glm(Y_BT_GPA ~ admissions$gpa, family="binomial")
   coeff_param_BT[i, 1] = lm_GRE_BT$coefficients[1]
   coeff_param_BT[i, 2] = lm_GRE_BT$coefficients[2]
   coeff_param_BT[i, 3] = lm_GPA_BT$coefficients[2]
@@ -188,5 +187,25 @@ colnames(compare_se) = c("SE(Intercept)", "SE(GRE Slope)", "SE(GPA Slope)")
 rownames(compare_se) = c("Empirical", "Parametric")
 
 
+
+# c 90% CI for probability that a student is admitted | gre = 500 and gpa = 3.7
+# Empirical Bootstrap for estimates of probabilty p
+B = 100000
+n = nrow(admissions)
+p_BT = rep(NA, B)
+for (i in 1:B) {
+  BT_i = sample(n, n, replace = T)  
+  sample_BT = admissions[BT_i,]
+  # fit models from BT samples 
+  lm_GRE_BT = lm(admit ~ gre, sample_BT)
+  lm_GPA_BT = lm(admit ~ gpa, sample_BT)
+  # predict probability of admission for GRE = 500, GPA = 3.7
+  p0_GRE = predict(lm_GRE_BT, newdata = 500, type = 'response')
+  p0_GPA = predict(lm_GPA_BT, newdata = 3.7, type = 'response')
+  
+  p_BT[i] = 0
+}
+# Construct 90% CI using quantile method
+CI_lambda = quantile(p_BT, c(0.05, 0.95))
 
 
