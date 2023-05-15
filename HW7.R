@@ -176,7 +176,7 @@ CI_lambda = quantile(p_BT, c(0.05, 0.95))
 # d Test null hypothesis H0 = John & Sam have same chance of admission
 # John: 700, 2.3; Sam: 670, 3.9
 # Test this by seeing if odds ratio = 1
-B = 100000
+B = 10000
 n = nrow(admissions)
 OR_BT = rep(NA, B)
 for (i in 1:B){
