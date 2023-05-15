@@ -5,6 +5,7 @@
 
 # a Linear fits from given data 
 fit_iris = lm(Petal.Width ~ Sepal.Length + Sepal.Width + Petal.Length, iris)
+plot(iris$Sepal.Length, iris$Petal.Width)
 
 # b Bootstrapping linear fits
 B = 10000
@@ -81,6 +82,7 @@ boxplot(coeff_BT_emp[, 1], coeff_BT_res[, 1], coeff_BT_wild[, 1],
         col = c("pink", "red", "orange"))
 
 
+
 # -----------------------------------------------------------------------------------------
 
 # 2
@@ -97,7 +99,7 @@ n = nrow(admissions)
 # 1 means admit, 0 means reject (binomial)
 lm_GPA = glm(admit ~ gpa, admissions, family="binomial")
 slope_sample = lm_GPA$coefficients[2]
-p0 = predict(lm_GPA, type = 'response')
+p0 = predict(lm_GPA, type = "response")
 slope_GPA_BT = rep(NA, B)
 for (i in 1:B){
   # bootstrap sample for admit or not
@@ -133,7 +135,7 @@ for (i in 1:B){
 lm_admit = glm(admit ~ gre + gpa, admissions, family="binomial")
 coeff_param_BT = matrix(NA, B, 3)
 # estimate probability of admission based on GRE, GPA
-p0 = predict(lm_admit, type = 'response')
+p0 = predict(lm_admit, type = "response")
 for (i in 1:B){
   # bootstrap sample for admit or not
   Y_BT = rbinom(n, 1, p0)
@@ -164,7 +166,7 @@ for (i in 1:B) {
   # fit models from BT samples 
   lm_admit_BT = lm(admit ~ gre + gpa, sample_BT)
   # predict probability of admission for GRE = 500, GPA = 3.7
-  p0 = predict(lm_admit_BT, newdata = data.frame("gre"= 500, "gpa" = 3.7), type = 'response')
+  p0 = predict(lm_admit_BT, newdata = data.frame("gre"= 500, "gpa" = 3.7), type = "response")
   p_BT[i] = p0
 }
 # Construct 90% CI using quantile method
@@ -187,11 +189,14 @@ for (i in 1:B){
   p0_sam = predict(lm_admit_BT, newdata = data.frame("gre"= 670, "gpa" = 3.9), type = "response")
   OR_BT[i] = p0_john / p0_sam
 }
+# Check to see avg OR (comparison of admission rates)
+mean(OR_BT)
 # t-test to get p-value
 # Testing if mean odds ratio is 1 (this would indicate that on average, sam and john 
 # have the same chance of admission)
 pval = t.test(OR_BT, mu = 1)$p.value
 # Using a significance level of 0.1
 reject_H0 = pval < 0.1
+# Conclusion: reject H0, Sam and John have distinct odds of admission
 
 
