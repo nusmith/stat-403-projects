@@ -1,3 +1,6 @@
+library(plyr)
+library(ggplot2)
+
 # Problem 1
 # rock data: area (response), peri (covariate)
 data = data.frame("peri" = rock$peri, "area" = rock$area)
@@ -82,9 +85,9 @@ area_kreg_SD = sapply(1:length(x_seq), function(x){
 })
 # Show CI
 plot(data$peri,data$area, pch=1, cex=0.5, col="gray", 
-main="Area vs Peri, 95% CI for Kernel Regression",
-xlab = "Peri",
-ylab = "Area")
+  main="Area vs Peri, 95% CI for Kernel Regression",
+  xlab = "Peri",
+  ylab = "Area")
 lines(x_seq, area_pred+qnorm(0.975)*area_kreg_SD, lwd=2, col="blue", lty=2)
 lines(x_seq, area_pred-qnorm(0.975)*area_kreg_SD, lwd=2, col="blue", lty=2)
 lines(x_seq, area_pred, lwd=2, col="black")
@@ -93,4 +96,30 @@ polygon(x=c(x_seq, rev(x_seq)), y=c(area_pred - qnorm(0.975)*area_kreg_SD, rev(a
         col="lightblue")
 lines(x_seq, area_pred, lwd=2, col="black")
 legend("topleft", legend=c("h=500 KReg", "95% CI"), col=c("black", "lightblue"), cex=0.8, lwd=2)
+
+
+
+
+
+# Problem 2
+# Still using rock data. Regressogram method
+# b -- scatter plot + regressogram curve
+plot(data$peri,data$area, pch=1, cex=0.5, col="gray", main="Area vs Peri",
+     xlab = "Peri", ylab = "Area")
+# m estimates the regression function (regressogram func)
+# Using bins B1 = (0, 1000], B2 = (1000, 2000], B3 = (2000, 3000], B4 = (3000, 4000], B5 = (4000, 5000]
+m = function(x_arr) {
+  mx_arr = rep(NA, length(x_arr))
+  for (i in 1:length(x_arr)){
+    x = x_arr[i]
+    lower = round_any(x, 1000, f=floor)
+    upper = round_any(x, 1000, f=ceiling)
+    mx = sum(data$area[data$peri < upper & data$peri > lower]) / length(data$area[data$peri < upper & data$peri > lower])
+    mx_arr[i] = mx
+  }
+  mx_arr
+}
+x = seq(0, 5000, 50)
+lines(x, m(x), col="red", lwd=2, type="s")
+legend("topleft", legend="Regressogram Linear Regression", col="red", cex=0.8, lwd=2)
 
